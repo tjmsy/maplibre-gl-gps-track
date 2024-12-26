@@ -9,5 +9,5 @@
 ### TODO:
 - Visualize heart rates or slopes in combination with speed, using line-width interpolation or potentially other properties  (ideas to be explored).
 - Refine code style and improve readability.
-- Implement additional features (e.g., filtering, enhanced styling).
+- Implement additional features.
 - Enhance UI for better user experience.
