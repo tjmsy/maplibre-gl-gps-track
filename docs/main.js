@@ -3,8 +3,8 @@ import GPSTrackControl from "https://cdn.jsdelivr.net/gh/tjmsy/maplibre-gl-gps-t
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/liberty',
-  center: [139.18, 35.94],
-  zoom: 11,
+  center: [0, 0],
+  zoom: 1,
   hash: true,
 });
 
