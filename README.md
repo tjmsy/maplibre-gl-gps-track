@@ -10,6 +10,7 @@
 [Demo](https://tjmsy.github.io/maplibre-gl-gps-track/)
 
 ### TODO:
+- Warp to the GPS position when loading a GPS track.
 - Visualize heart rates or slopes in combination with speed, using line-width interpolation or potentially other properties  (ideas to be explored).
 - Refine code style and improve readability.
 - Implement additional features.
