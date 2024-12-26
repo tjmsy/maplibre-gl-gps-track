@@ -6,6 +6,9 @@
 - Basic functionality for displaying GPX data.
 - Input fields for adjusting speed range.
 
+## Demo:
+[Demo](https://tjmsy.github.io/maplibre-gl-gps-track/)
+
 ### TODO:
 - Visualize heart rates or slopes in combination with speed, using line-width interpolation or potentially other properties  (ideas to be explored).
 - Refine code style and improve readability.
