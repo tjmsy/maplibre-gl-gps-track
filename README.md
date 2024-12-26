@@ -12,6 +12,20 @@
 
 ![image](https://github.com/user-attachments/assets/19506a47-dce1-4126-ba00-3a2841b651b4)
 
+## Usage  
+
+Import from CDN.
+
+```javascript
+import GPSTrackControl from "https://cdn.jsdelivr.net/gh/tjmsy/maplibre-gl-gps-track/src/maplibre-gl-gps-track.js";
+```
+
+Add control.
+
+```javascript
+map.addControl(new GPSTrackControl(), 'top-left');
+```
+
 ## TODO:
 - Warp to the GPS position when loading a GPS track.
 - Visualize heart rates or slopes in combination with speed, using line-width interpolation or potentially other properties  (ideas to be explored).
