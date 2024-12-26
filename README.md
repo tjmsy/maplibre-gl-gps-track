@@ -1,6 +1,6 @@
 # maplibre-gl-gps-track
 
-(WIP) A MapLibre GL JS plugin for displaying GPS tracks with customizable styling and metrics visualization.
+(WIP) A [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js/)  plugin for displaying GPS tracks with customizable styling and metrics visualization.
 
 ## Already Implemented:
 - Basic functionality for displaying GPX data.
