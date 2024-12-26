@@ -20,6 +20,7 @@
 - Refine code style and improve readability.
 - Implement additional features.
 - Enhance UI.
+- Add documentation.
 
 ## Current Status:
 This project is currently on hold as I’m focusing on other development tasks. However, I welcome contributions! If you have ideas or improvements, feel free to submit a pull request or open an issue. 
