@@ -9,11 +9,10 @@ class GPSTrackControl {
   constructor() {
     this.container = null;
     this.map = null;
-    this.minSpeedKmPerHour = 0;
-    this.maxSpeedKmPerHour = 20;
     this.minHeartRateBpm = 50;
     this.maxHeartRateBpm = 200;
     this.uiBuilder = new UIBuilder();
+    this.isGPXLoaded = false;
   }
 
   onFileChange = (event) => {
@@ -81,7 +80,65 @@ class GPSTrackControl {
     }
   };
 
+<<<<<<< HEAD
   calculateBounds(features) {
+=======
+  addLine = (geojson, lineStyle) => {
+    if (!geojson || !geojson.type || geojson.type !== "FeatureCollection") {
+      console.error(
+        "Invalid GeoJSON data. Expected a FeatureCollection but received:",
+        geojson
+      );
+      return;
+    }
+    this.map.addSource(GPSTrackControl.SOURCE_ID, {
+      type: "geojson",
+      data: geojson,
+    });
+    this.map.addLayer(lineStyle);
+  };
+
+  removeLineIfExists = () => {
+    if (this.map.getSource(GPSTrackControl.SOURCE_ID)) {
+      this.map.removeLayer(GPSTrackControl.LAYER_ID);
+      this.map.removeSource(GPSTrackControl.SOURCE_ID);
+    }
+  };
+
+  getSpeedRange(features) {
+    let minSpeed = Infinity;
+    let maxSpeed = -Infinity;
+
+    features.forEach((feature) => {
+      const speed = feature.properties?.speed;
+
+      if (speed !== undefined) {
+        minSpeed = Math.min(minSpeed, speed);
+        maxSpeed = Math.max(maxSpeed, speed);
+      }
+    });
+
+    return { minSpeed, maxSpeed };
+  }
+
+  updateSpeedRange(features) {
+    const speedRange = this.getSpeedRange(features);
+    this.minSpeedKmPerHour = Math.round(speedRange.minSpeed);
+    this.maxSpeedKmPerHour = Math.round(speedRange.maxSpeed);
+
+    const minSpeedInput = this.container.querySelector("#min-speed-input");
+    const maxSpeedInput = this.container.querySelector("#max-speed-input");
+
+    if (minSpeedInput) {
+      minSpeedInput.value = this.minSpeedKmPerHour;
+    }
+    if (maxSpeedInput) {
+      maxSpeedInput.value = this.maxSpeedKmPerHour;
+    }
+  }
+
+  getBounds(features) {
+>>>>>>> 8a5b7a4 (feat: add speed range handling and initialize it as hidden)
     let minLat = Infinity,
       maxLat = -Infinity,
       minLng = Infinity,
@@ -100,6 +157,7 @@ class GPSTrackControl {
     return { minLat, maxLat, minLng, maxLng };
   }
 
+<<<<<<< HEAD
   addLine = (geojson, lineStyle) => {
     if (!geojson || !geojson.type || geojson.type !== "FeatureCollection") {
       console.error(
@@ -130,6 +188,10 @@ class GPSTrackControl {
     const { minLat, maxLat, minLng, maxLng } = this.calculateBounds(
       geojson.features
     );
+=======
+  moveMap = (features) => {
+    const { minLat, maxLat, minLng, maxLng } = this.getBounds(features);
+>>>>>>> 8a5b7a4 (feat: add speed range handling and initialize it as hidden)
 
     this.map.fitBounds(
       [
@@ -143,6 +205,33 @@ class GPSTrackControl {
     );
   };
 
+<<<<<<< HEAD
+=======
+  updateSpeedInputs = () => {
+    const minSpeedInput = document.getElementById("min-speed-input");
+    const maxSpeedInput = document.getElementById("max-speed-input");
+
+    minSpeedInput.value = this.minSpeedKmPerHour;
+    maxSpeedInput.value = this.maxSpeedKmPerHour;
+  };
+
+  showSpeedRangeFieldIfGPXLoaded = () => {
+    const speedContainer = this.container.querySelector("#speed-container");
+    if (this.isGPXLoaded) {
+      speedContainer.style.display = "flex";
+    }
+  };
+
+  renderLine = ({ geojson }) => {
+    this.isGPXLoaded = true;
+    this.removeLineIfExists();
+    this.updateSpeedRange(geojson.features);
+    this.uiBuilder.setSpeedContainerVisibility(this.isGPXLoaded);
+    this.addLine(geojson, this.createLineStyle());
+    this.moveMap(geojson.features);
+  };
+
+>>>>>>> 8a5b7a4 (feat: add speed range handling and initialize it as hidden)
   closeOnClickOutside = (event) => {
     if (!this.container.contains(event.target)) {
       this.toggleGPXUploadVisibility(false);
@@ -152,18 +241,17 @@ class GPSTrackControl {
 
   toggleGPXUploadVisibility = (isVisible) => {
     const fileInput = this.container.querySelector("#gpx-file-input");
-    const speedInputFields = this.container.querySelector("div");
-    const showButton = this.container.querySelector("button");
+    const speedContainer = this.container.querySelector("#speed-container");
+    const showButton = this.container.querySelector("#show-button");
 
     if (isVisible) {
       fileInput.style.display = "block";
-      speedInputFields.style.display = "block";
+      this.uiBuilder.setSpeedContainerVisibility(this.isGPXLoaded);
       showButton.style.display = "none";
-
       document.addEventListener("click", this.closeOnClickOutside);
     } else {
       fileInput.style.display = "none";
-      speedInputFields.style.display = "none";
+      this.uiBuilder.setSpeedContainerVisibility(false);
       showButton.style.display = "block";
     }
   };
@@ -171,9 +259,8 @@ class GPSTrackControl {
   attachEventListeners() {
     const showButton = this.container.querySelector("#show-button");
     const fileInput = this.container.querySelector("#gpx-file-input");
-    const speedInputFields = this.container.querySelector(
-      "#speed-input-fields"
-    );
+    const minSpeedInput = this.container.querySelector("#min-speed-input");
+    const maxSpeedInput = this.container.querySelector("#max-speed-input");
 
     showButton.addEventListener("click", () => {
       this.toggleGPXUploadVisibility(true);
@@ -181,7 +268,13 @@ class GPSTrackControl {
 
     fileInput.addEventListener("change", this.onFileChange);
 
-    speedInputFields.addEventListener("input", () => {
+    minSpeedInput.addEventListener("input", (event) => {
+      this.minSpeedKmPerHour = parseFloat(event.target.value);
+      this.updateLineStyle();
+    });
+
+    maxSpeedInput.addEventListener("input", (event) => {
+      this.maxSpeedKmPerHour = parseFloat(event.target.value);
       this.updateLineStyle();
     });
   }
