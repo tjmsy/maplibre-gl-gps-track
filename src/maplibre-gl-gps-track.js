@@ -5,53 +5,14 @@ class GPSTrackControl {
   static SOURCE_ID = "gps-source";
   static LAYER_ID = "gps-layer";
 
-  minSpeedKmPerHour = 0;
-  maxSpeedKmPerHour = 20;
-
-  minHeartRateBpm = 50;
-  maxHeartRateBpm = 200;
-
   constructor() {
     this.container = null;
     this.map = null;
+    this.minSpeedKmPerHour = 0;
+    this.maxSpeedKmPerHour = 20;
+    this.minHeartRateBpm = 50;
+    this.maxHeartRateBpm = 200;
   }
-
-  createSpeedInputFields = () => {
-    const speedContainer = document.createElement("div");
-    speedContainer.style.display = "flex";
-    speedContainer.style.flexDirection = "column";
-    speedContainer.style.padding = "8px";
-
-    const minSpeedLabel = document.createElement("label");
-    minSpeedLabel.innerText = "Min Speed (km/h):";
-    const minSpeedInput = document.createElement("input");
-    minSpeedInput.type = "number";
-    minSpeedInput.value = this.minSpeedKmPerHour;
-    minSpeedInput.style.marginBottom = "8px";
-    minSpeedInput.style.width = "60px";
-    minSpeedInput.addEventListener("input", (event) => {
-      this.minSpeedKmPerHour = parseFloat(event.target.value) || 0;
-      this.updateLineStyle();
-    });
-
-    const maxSpeedLabel = document.createElement("label");
-    maxSpeedLabel.innerText = "Max Speed (km/h):";
-    const maxSpeedInput = document.createElement("input");
-    maxSpeedInput.type = "number";
-    maxSpeedInput.value = this.maxSpeedKmPerHour;
-    maxSpeedInput.style.width = "60px";
-    maxSpeedInput.addEventListener("input", (event) => {
-      this.maxSpeedKmPerHour = parseFloat(event.target.value) || 0;
-      this.updateLineStyle();
-    });
-
-    speedContainer.appendChild(minSpeedLabel);
-    speedContainer.appendChild(minSpeedInput);
-    speedContainer.appendChild(maxSpeedLabel);
-    speedContainer.appendChild(maxSpeedInput);
-
-    return speedContainer;
-  };
 
   onFileChange = (event) => {
     const file = event.target.files[0];
@@ -114,11 +75,12 @@ class GPSTrackControl {
   };
 
   calculateBounds(features) {
-    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    let minLat = Infinity,
+      maxLat = -Infinity,
+      minLng = Infinity,
+      maxLng = -Infinity;
 
-    // 各 Feature の座標を取り出して処理
-    features.forEach(feature => {
-      // 線分の座標
+    features.forEach((feature) => {
       const coordinates = feature.geometry.coordinates;
 
       coordinates.forEach(([lng, lat]) => {
@@ -128,7 +90,6 @@ class GPSTrackControl {
         maxLng = Math.max(maxLng, lng);
       });
     });
-
     return { minLat, maxLat, minLng, maxLng };
   }
 
@@ -159,74 +120,128 @@ class GPSTrackControl {
     const lineStyle = this.createLineStyle();
     this.addLine(geojson, lineStyle);
 
-    // FeatureCollection から座標を処理
-    const { minLat, maxLat, minLng, maxLng } = this.calculateBounds(geojson.features);
+    const { minLat, maxLat, minLng, maxLng } = this.calculateBounds(
+      geojson.features
+    );
 
-    this.map.fitBounds([
-      [minLng, minLat],
-      [maxLng, maxLat]
-    ], {
-      padding: { top: 50, bottom: 50, left: 50, right: 50 },
-      duration: 1000
-    });
+    this.map.fitBounds(
+      [
+        [minLng, minLat],
+        [maxLng, maxLat],
+      ],
+      {
+        padding: { top: 50, bottom: 50, left: 50, right: 50 },
+        duration: 1000,
+      }
+    );
+  };
+
+  closeOnClickOutside = (event) => {
+    if (!this.container.contains(event.target)) {
+      this.toggleGPXUploadVisibility(false);
+      document.removeEventListener("click", this.closeOnClickOutside);
+    }
   };
 
   toggleGPXUploadVisibility = (isVisible) => {
-    const input = document.getElementById("gpx-file-input");
+    const fileInput = this.container.querySelector("#gpx-file-input");
     const speedInputFields = this.container.querySelector("div");
     const showButton = this.container.querySelector("button");
 
     if (isVisible) {
-      input.style.display = "block";
+      fileInput.style.display = "block";
       speedInputFields.style.display = "block";
       showButton.style.display = "none";
 
-      const closeOnClickOutside = (event) => {
-        if (!this.container.contains(event.target)) {
-          this.toggleGPXUploadVisibility(false);
-          document.removeEventListener("click", closeOnClickOutside);
-        }
-      };
-
-      document.addEventListener("click", closeOnClickOutside);
+      document.addEventListener("click", this.closeOnClickOutside);
     } else {
-      input.style.display = "none";
+      fileInput.style.display = "none";
       speedInputFields.style.display = "none";
       showButton.style.display = "block";
     }
   };
 
-  addGPXLoadButton = () => {
-    this.container = document.createElement("div");
-    this.container.className = "maplibregl-ctrl maplibregl-ctrl-group";
-
-    const showButton = document.createElement("button");
-    showButton.innerText = "⌚";
+  attachEventListeners() {
+    const showButton = this.container.querySelector("#show-button");
+    const fileInput = this.container.querySelector("#gpx-file-input");
+    const speedInputFields = this.container.querySelector(
+      "#speed-input-fields"
+    );
 
     showButton.addEventListener("click", () => {
       this.toggleGPXUploadVisibility(true);
     });
 
-    const input = document.createElement("input");
-    input.type = "file";
-    input.id = "gpx-file-input";
-    input.accept = ".gpx";
-    input.style.display = "none";
+    fileInput.addEventListener("change", this.onFileChange);
 
-    input.addEventListener("change", this.onFileChange);
+    speedInputFields.addEventListener("input", () => {
+      this.updateLineStyle();
+    });
+  }
 
+  createSpeedInputFields() {
+    const speedContainer = document.createElement("div");
+    speedContainer.style.display = "none";
+    speedContainer.style.flexDirection = "column";
+    speedContainer.style.padding = "8px";
+    speedContainer.id = "speed-input-fields";
+
+    const minSpeedLabel = document.createElement("label");
+    minSpeedLabel.innerText = "Min Speed (km/h):";
+    const minSpeedInput = document.createElement("input");
+    minSpeedInput.type = "number";
+    minSpeedInput.value = this.minSpeedKmPerHour;
+    minSpeedInput.style.marginBottom = "8px";
+    minSpeedInput.style.width = "60px";
+
+    const maxSpeedLabel = document.createElement("label");
+    maxSpeedLabel.innerText = "Max Speed (km/h):";
+    const maxSpeedInput = document.createElement("input");
+    maxSpeedInput.type = "number";
+    maxSpeedInput.value = this.maxSpeedKmPerHour;
+    maxSpeedInput.style.width = "60px";
+
+    speedContainer.appendChild(minSpeedLabel);
+    speedContainer.appendChild(minSpeedInput);
+    speedContainer.appendChild(maxSpeedLabel);
+    speedContainer.appendChild(maxSpeedInput);
+
+    return speedContainer;
+  }
+
+  createFileInput() {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.id = "gpx-file-input";
+    fileInput.accept = ".gpx";
+    fileInput.style.display = "none";
+    return fileInput;
+  }
+
+  createShowButton() {
+    const showButton = document.createElement("button");
+    showButton.id = "show-button";
+    showButton.innerText = "⌚";
+    return showButton;
+  }
+
+  createUIElements() {
+    this.container = document.createElement("div");
+    this.container.className = "maplibregl-ctrl maplibregl-ctrl-group";
+
+    const showButton = this.createShowButton();
+    const fileInput = this.createFileInput();
     const speedInputFields = this.createSpeedInputFields();
-    speedInputFields.style.display = "none";
-    speedInputFields.classList.add("speed-input-fields");
 
     this.container.appendChild(showButton);
-    this.container.appendChild(input);
+    this.container.appendChild(fileInput);
     this.container.appendChild(speedInputFields);
-  };
+  }
 
   onAdd(map) {
     this.map = map;
-    this.addGPXLoadButton();
+    this.createUIElements();
+    this.attachEventListeners();
     return this.container;
   }
 
