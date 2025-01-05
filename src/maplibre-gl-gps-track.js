@@ -208,7 +208,6 @@ class GPSTrackControl {
 
   showHideUI = (isVisible) => {
     const fileInput = this.container.querySelector("#gpx-file-input");
-
     const speedContainer = this.container.querySelector("#speed-container");
     const showButton = this.container.querySelector("#show-button");
 
@@ -237,7 +236,6 @@ class GPSTrackControl {
     fileInput.addEventListener("change", this.onFileChange);
 
     minSpeedInput.addEventListener("input", (event) => {
-
       const inputValue = event.target.value;
       if (inputValue === "") {
         return;
@@ -248,7 +246,7 @@ class GPSTrackControl {
         this.updateLineStyle();
       }
     });
-    
+
     maxSpeedInput.addEventListener("input", (event) => {
       const inputValue = event.target.value;
       if (inputValue === "") {
@@ -259,7 +257,6 @@ class GPSTrackControl {
         this.maxSpeedKmPerHour = value;
         this.updateLineStyle();
       }
-
     });
   }
 
