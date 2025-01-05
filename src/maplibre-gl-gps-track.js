@@ -113,6 +113,25 @@ class GPSTrackControl {
     }
   };
 
+  calculateBounds(features) {
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+
+    // 各 Feature の座標を取り出して処理
+    features.forEach(feature => {
+      // 線分の座標
+      const coordinates = feature.geometry.coordinates;
+
+      coordinates.forEach(([lng, lat]) => {
+        minLat = Math.min(minLat, lat);
+        maxLat = Math.max(maxLat, lat);
+        minLng = Math.min(minLng, lng);
+        maxLng = Math.max(maxLng, lng);
+      });
+    });
+
+    return { minLat, maxLat, minLng, maxLng };
+  }
+
   addLine = (geojson, lineStyle) => {
     if (!geojson || !geojson.type || geojson.type !== "FeatureCollection") {
       console.error(
@@ -139,6 +158,17 @@ class GPSTrackControl {
     this.removeOldLine();
     const lineStyle = this.createLineStyle();
     this.addLine(geojson, lineStyle);
+
+    // FeatureCollection から座標を処理
+    const { minLat, maxLat, minLng, maxLng } = this.calculateBounds(geojson.features);
+
+    this.map.fitBounds([
+      [minLng, minLat],
+      [maxLng, maxLat]
+    ], {
+      padding: { top: 50, bottom: 50, left: 50, right: 50 },
+      duration: 1000
+    });
   };
 
   toggleGPXUploadVisibility = (isVisible) => {
