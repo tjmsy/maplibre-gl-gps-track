@@ -1,5 +1,6 @@
 import { convertGpxToGeojsonWithMetrics } from "./convertGpxToGeojsonWithMetrics.js";
 import FileHandler from "./FileHandler.js";
+import UIBuilder from "./UIBuilder.js"
 
 class GPSTrackControl {
   static SOURCE_ID = "gps-source";
@@ -12,22 +13,28 @@ class GPSTrackControl {
     this.maxSpeedKmPerHour = 20;
     this.minHeartRateBpm = 50;
     this.maxHeartRateBpm = 200;
+    this.uiBuilder = new UIBuilder();
   }
 
   onFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      FileHandler.readFile(file, this.onFileLoad, this.onFileError);
+      this.handleFile(file);
     }
   };
 
-  onFileLoad = (event) => {
-    const xml = FileHandler.parseXML(event.target.result);
-    const geojsonData = convertGpxToGeojsonWithMetrics(xml);
-    this.updateLine({
-      geojson: geojsonData,
-    });
-  };
+  async handleFile(file) {
+    try {
+      const fileContent = await FileHandler.readFile(file);
+      const xml = FileHandler.parseXML(fileContent);
+      const geojsonData = convertGpxToGeojsonWithMetrics(xml);
+      this.updateLine({
+        geojson: geojsonData,
+      });
+    } catch (error) {
+      this.onFileError(error);
+    }
+  }
 
   onFileError = (error) => {
     alert(`Failed to load file. Reason: ${error.message || "Unknown error"}`);
@@ -179,70 +186,16 @@ class GPSTrackControl {
     });
   }
 
-  createSpeedInputFields() {
-    const speedContainer = document.createElement("div");
-    speedContainer.style.display = "none";
-    speedContainer.style.flexDirection = "column";
-    speedContainer.style.padding = "8px";
-    speedContainer.id = "speed-input-fields";
-
-    const minSpeedLabel = document.createElement("label");
-    minSpeedLabel.innerText = "Min Speed (km/h):";
-    const minSpeedInput = document.createElement("input");
-    minSpeedInput.type = "number";
-    minSpeedInput.value = this.minSpeedKmPerHour;
-    minSpeedInput.style.marginBottom = "8px";
-    minSpeedInput.style.width = "60px";
-
-    const maxSpeedLabel = document.createElement("label");
-    maxSpeedLabel.innerText = "Max Speed (km/h):";
-    const maxSpeedInput = document.createElement("input");
-    maxSpeedInput.type = "number";
-    maxSpeedInput.value = this.maxSpeedKmPerHour;
-    maxSpeedInput.style.width = "60px";
-
-    speedContainer.appendChild(minSpeedLabel);
-    speedContainer.appendChild(minSpeedInput);
-    speedContainer.appendChild(maxSpeedLabel);
-    speedContainer.appendChild(maxSpeedInput);
-
-    return speedContainer;
-  }
-
-  createFileInput() {
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.id = "gpx-file-input";
-    fileInput.accept = ".gpx";
-    fileInput.style.display = "none";
-    return fileInput;
-  }
-
-  createShowButton() {
-    const showButton = document.createElement("button");
-    showButton.id = "show-button";
-    showButton.innerText = "⌚";
-    return showButton;
-  }
-
-  createUIElements() {
-    this.container = document.createElement("div");
-    this.container.className = "maplibregl-ctrl maplibregl-ctrl-group";
-
-    const showButton = this.createShowButton();
-    const fileInput = this.createFileInput();
-    const speedInputFields = this.createSpeedInputFields();
-
-    this.container.appendChild(showButton);
-    this.container.appendChild(fileInput);
-    this.container.appendChild(speedInputFields);
+  createUI(){
+    this.uiBuilder.createUIElements();
+    this.container = this.uiBuilder.container;
   }
 
   onAdd(map) {
     this.map = map;
-    this.createUIElements();
+    this.createUI()
     this.attachEventListeners();
-    return this.container;
+    return this.uiBuilder.container;
   }
 
   onRemove() {
