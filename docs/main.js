@@ -1,4 +1,4 @@
-import GPSTrackControl from "https://cdn.jsdelivr.net/gh/tjmsy/maplibre-gl-gps-track/src/maplibre-gl-gps-track.js";
+import GPSTrackControl from "https://cdn.jsdelivr.net/gh/tjmsy/maplibre-gl-gps-track@v0.1.0/src/maplibre-gl-gps-track.js";
 
 const map = new maplibregl.Map({
   container: 'map',
