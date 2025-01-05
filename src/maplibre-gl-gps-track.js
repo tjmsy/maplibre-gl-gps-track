@@ -71,6 +71,13 @@ class GPSTrackControl {
   };
 
   updateLineStyle = () => {
+    const minSpeed = this.minSpeedKmPerHour;
+    const maxSpeed = this.maxSpeedKmPerHour;
+
+    if (maxSpeed < minSpeed) {
+      return;
+    }
+
     if (this.map.getLayer(GPSTrackControl.LAYER_ID)) {
       this.map.setPaintProperty(
         GPSTrackControl.LAYER_ID,
@@ -201,6 +208,7 @@ class GPSTrackControl {
 
   showHideUI = (isVisible) => {
     const fileInput = this.container.querySelector("#gpx-file-input");
+
     const speedContainer = this.container.querySelector("#speed-container");
     const showButton = this.container.querySelector("#show-button");
 
@@ -229,13 +237,29 @@ class GPSTrackControl {
     fileInput.addEventListener("change", this.onFileChange);
 
     minSpeedInput.addEventListener("input", (event) => {
-      this.minSpeedKmPerHour = parseFloat(event.target.value);
-      this.updateLineStyle();
-    });
 
+      const inputValue = event.target.value;
+      if (inputValue === "") {
+        return;
+      }
+      const value = parseFloat(inputValue);
+      if (!isNaN(value)) {
+        this.minSpeedKmPerHour = value;
+        this.updateLineStyle();
+      }
+    });
+    
     maxSpeedInput.addEventListener("input", (event) => {
-      this.maxSpeedKmPerHour = parseFloat(event.target.value);
-      this.updateLineStyle();
+      const inputValue = event.target.value;
+      if (inputValue === "") {
+        return;
+      }
+      const value = parseFloat(inputValue);
+      if (!isNaN(value)) {
+        this.maxSpeedKmPerHour = value;
+        this.updateLineStyle();
+      }
+
     });
   }
 
