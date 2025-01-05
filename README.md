@@ -27,11 +27,9 @@ map.addControl(new GPSTrackControl(), 'top-left');
 ```
 
 ## TODO:
-- Warp to the GPS position when loading a GPS track.
 - Visualize heart rates or slopes in combination with speed, using line-width interpolation or potentially other properties  (ideas to be explored).
 - Implement support for additional file formats (e.g., KML, GeoJSON, TCX) besides GPX.
 - Implement animation for visualizing the movement of the GPS track.
-- Refine code style and improve readability.
 - Implement additional features.
 - Enhance UI.
 - Add documentation.
