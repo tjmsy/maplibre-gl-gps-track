@@ -9,11 +9,11 @@ class GPSTrackControl {
   constructor({
     paintOptions = { "line-width": 3 },
     fitBoundsOptions = { duration: 1000 },
-    speedColor = true,
+    isSpeedColorEnabled = true,
   }) {
     this.paintOptions = paintOptions;
     this.fitBoundsOptions = fitBoundsOptions;
-    this.speedColor = speedColor;
+    this.isSpeedColorEnabled = isSpeedColorEnabled;
 
     this.container = null;
     this.map = null;
@@ -63,7 +63,7 @@ class GPSTrackControl {
     ];
   };
 
-  updateSpeedColor = () => {
+  updateSpeedColorLayer = () => {
     const minSpeed = this.minSpeedKmPerHour;
     const maxSpeed = this.maxSpeedKmPerHour;
 
@@ -181,10 +181,10 @@ class GPSTrackControl {
     this.isGPXLoaded = true;
     this.removeLineIfExists();
     this.addLine(geojson, this.createLineStyle());
-    if (this.speedColor) {
+    if (this.isSpeedColorEnabled) {
       this.updateSpeedRange(geojson.features);
       this.uiBuilder.setSpeedContainerVisibility(this.isGPXLoaded);
-      this.updateSpeedColor();
+      this.updateSpeedColorLayer();
     }
     this.moveMap(geojson.features);
   };
@@ -203,7 +203,9 @@ class GPSTrackControl {
 
     if (isVisible) {
       fileInput.style.display = "block";
-      this.uiBuilder.setSpeedContainerVisibility(this.isGPXLoaded);
+      this.uiBuilder.setSpeedContainerVisibility(
+        this.isGPXLoaded && this.isSpeedColorEnabled
+      );
       showButton.style.display = "none";
       document.addEventListener("click", this.closeOnClickOutside);
     } else {
@@ -241,7 +243,7 @@ class GPSTrackControl {
       const value = parseFloat(inputValue);
       if (!isNaN(value)) {
         this.minSpeedKmPerHour = value;
-        this.updateSpeedColor();
+        this.updateSpeedColorLayer();
       }
     });
 
@@ -253,7 +255,7 @@ class GPSTrackControl {
       const value = parseFloat(inputValue);
       if (!isNaN(value)) {
         this.maxSpeedKmPerHour = value;
-        this.updateSpeedColor();
+        this.updateSpeedColorLayer();
       }
     });
   }
