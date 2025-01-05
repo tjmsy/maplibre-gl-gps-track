@@ -6,7 +6,15 @@ class GPSTrackControl {
   static SOURCE_ID = "gps-source";
   static LAYER_ID = "gps-layer";
 
-  constructor() {
+  constructor({
+    paintOptions = { "line-width": 3 },
+    fitBoundsOptions = { duration: 1000 },
+    speedColor = true,
+  }) {
+    this.paintOptions = paintOptions;
+    this.fitBoundsOptions = fitBoundsOptions;
+    this.speedColor = speedColor;
+
     this.container = null;
     this.map = null;
     this.minHeartRateBpm = 50;
@@ -14,13 +22,6 @@ class GPSTrackControl {
     this.uiBuilder = new UIBuilder();
     this.isGPXLoaded = false;
   }
-
-  onFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      this.handleFile(file);
-    }
-  };
 
   async handleFile(file) {
     try {
@@ -34,6 +35,13 @@ class GPSTrackControl {
       this.onFileError(error);
     }
   }
+
+  onFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      this.handleFile(file);
+    }
+  };
 
   onFileError = (error) => {
     alert(`Failed to load file. Reason: ${error.message || "Unknown error"}`);
@@ -55,22 +63,7 @@ class GPSTrackControl {
     ];
   };
 
-  createLineStyle = () => {
-    return {
-      id: GPSTrackControl.LAYER_ID,
-      type: "line",
-      source: GPSTrackControl.SOURCE_ID,
-      layout: {
-        "line-cap": "square",
-      },
-      paint: {
-        "line-color": this.createSpeedColorExpression(),
-        "line-width": 3,
-      },
-    };
-  };
-
-  updateLineStyle = () => {
+  updateSpeedColor = () => {
     const minSpeed = this.minSpeedKmPerHour;
     const maxSpeed = this.maxSpeedKmPerHour;
 
@@ -85,6 +78,18 @@ class GPSTrackControl {
         this.createSpeedColorExpression()
       );
     }
+  };
+
+  createLineStyle = () => {
+    return {
+      id: GPSTrackControl.LAYER_ID,
+      type: "line",
+      source: GPSTrackControl.SOURCE_ID,
+      layout: {
+        "line-cap": "square",
+      },
+      paint: this.paintOptions,
+    };
   };
 
   addLine = (geojson, lineStyle) => {
@@ -168,34 +173,19 @@ class GPSTrackControl {
         [minLng, minLat],
         [maxLng, maxLat],
       ],
-      {
-        padding: { top: 50, bottom: 50, left: 50, right: 50 },
-        duration: 1000,
-      }
+      this.fitBoundsOptions
     );
-  };
-
-  updateSpeedInputs = () => {
-    const minSpeedInput = document.getElementById("min-speed-input");
-    const maxSpeedInput = document.getElementById("max-speed-input");
-
-    minSpeedInput.value = this.minSpeedKmPerHour;
-    maxSpeedInput.value = this.maxSpeedKmPerHour;
-  };
-
-  showSpeedRangeFieldIfGPXLoaded = () => {
-    const speedContainer = this.container.querySelector("#speed-container");
-    if (this.isGPXLoaded) {
-      speedContainer.style.display = "flex";
-    }
   };
 
   renderLine = ({ geojson }) => {
     this.isGPXLoaded = true;
     this.removeLineIfExists();
-    this.updateSpeedRange(geojson.features);
-    this.uiBuilder.setSpeedContainerVisibility(this.isGPXLoaded);
     this.addLine(geojson, this.createLineStyle());
+    if (this.speedColor) {
+      this.updateSpeedRange(geojson.features);
+      this.uiBuilder.setSpeedContainerVisibility(this.isGPXLoaded);
+      this.updateSpeedColor();
+    }
     this.moveMap(geojson.features);
   };
 
@@ -223,6 +213,14 @@ class GPSTrackControl {
     }
   };
 
+  updateSpeedInputs = () => {
+    const minSpeedInput = document.getElementById("min-speed-input");
+    const maxSpeedInput = document.getElementById("max-speed-input");
+
+    minSpeedInput.value = this.minSpeedKmPerHour;
+    maxSpeedInput.value = this.maxSpeedKmPerHour;
+  };
+
   attachEventListeners() {
     const showButton = this.container.querySelector("#show-button");
     const fileInput = this.container.querySelector("#gpx-file-input");
@@ -243,7 +241,7 @@ class GPSTrackControl {
       const value = parseFloat(inputValue);
       if (!isNaN(value)) {
         this.minSpeedKmPerHour = value;
-        this.updateLineStyle();
+        this.updateSpeedColor();
       }
     });
 
@@ -255,7 +253,7 @@ class GPSTrackControl {
       const value = parseFloat(inputValue);
       if (!isNaN(value)) {
         this.maxSpeedKmPerHour = value;
-        this.updateLineStyle();
+        this.updateSpeedColor();
       }
     });
   }
