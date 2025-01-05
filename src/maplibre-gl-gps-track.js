@@ -1,6 +1,6 @@
 import { convertGpxToGeojsonWithMetrics } from "./convertGpxToGeojsonWithMetrics.js";
 import FileHandler from "./FileHandler.js";
-import UIBuilder from "./UIBuilder.js"
+import UIBuilder from "./UIBuilder.js";
 
 class GPSTrackControl {
   static SOURCE_ID = "gps-source";
@@ -28,7 +28,7 @@ class GPSTrackControl {
       const fileContent = await FileHandler.readFile(file);
       const xml = FileHandler.parseXML(fileContent);
       const geojsonData = convertGpxToGeojsonWithMetrics(xml);
-      this.updateLine({
+      this.renderLine({
         geojson: geojsonData,
       });
     } catch (error) {
@@ -41,7 +41,7 @@ class GPSTrackControl {
     console.error("Error reading file:", error);
   };
 
-  calculateLineColor = () => {
+  createSpeedColorExpression = () => {
     const MID_SPEED = (this.minSpeedKmPerHour + this.maxSpeedKmPerHour) / 2;
     return [
       "interpolate",
@@ -65,7 +65,7 @@ class GPSTrackControl {
         "line-cap": "square",
       },
       paint: {
-        "line-color": this.calculateLineColor(),
+        "line-color": this.createSpeedColorExpression(),
         "line-width": 3,
       },
     };
@@ -76,8 +76,30 @@ class GPSTrackControl {
       this.map.setPaintProperty(
         GPSTrackControl.LAYER_ID,
         "line-color",
-        this.calculateLineColor()
+        this.createSpeedColorExpression()
       );
+    }
+  };
+
+  addLine = (geojson, lineStyle) => {
+    if (!geojson || !geojson.type || geojson.type !== "FeatureCollection") {
+      console.error(
+        "Invalid GeoJSON data. Expected a FeatureCollection but received:",
+        geojson
+      );
+      return;
+    }
+    this.map.addSource(GPSTrackControl.SOURCE_ID, {
+      type: "geojson",
+      data: geojson,
+    });
+    this.map.addLayer(lineStyle);
+  };
+
+  removeLineIfExists = () => {
+    if (this.map.getSource(GPSTrackControl.SOURCE_ID)) {
+      this.map.removeLayer(GPSTrackControl.LAYER_ID);
+      this.map.removeSource(GPSTrackControl.SOURCE_ID);
     }
   };
 
@@ -100,36 +122,8 @@ class GPSTrackControl {
     return { minLat, maxLat, minLng, maxLng };
   }
 
-  addLine = (geojson, lineStyle) => {
-    if (!geojson || !geojson.type || geojson.type !== "FeatureCollection") {
-      console.error(
-        "Invalid GeoJSON data. Expected a FeatureCollection but received:",
-        geojson
-      );
-      return;
-    }
-    this.map.addSource(GPSTrackControl.SOURCE_ID, {
-      type: "geojson",
-      data: geojson,
-    });
-    this.map.addLayer(lineStyle);
-  };
-
-  removeOldLine = () => {
-    if (this.map.getSource(GPSTrackControl.SOURCE_ID)) {
-      this.map.removeLayer(GPSTrackControl.LAYER_ID);
-      this.map.removeSource(GPSTrackControl.SOURCE_ID);
-    }
-  };
-
-  updateLine = ({ geojson }) => {
-    this.removeOldLine();
-    const lineStyle = this.createLineStyle();
-    this.addLine(geojson, lineStyle);
-
-    const { minLat, maxLat, minLng, maxLng } = this.calculateBounds(
-      geojson.features
-    );
+  moveMap = (features) => {
+    const { minLat, maxLat, minLng, maxLng } = this.calculateBounds(features);
 
     this.map.fitBounds(
       [
@@ -143,14 +137,20 @@ class GPSTrackControl {
     );
   };
 
+  renderLine = ({ geojson }) => {
+    this.removeLineIfExists();
+    this.addLine(geojson, this.createLineStyle());
+    this.moveMap(geojson.features);
+  };
+
   closeOnClickOutside = (event) => {
     if (!this.container.contains(event.target)) {
-      this.toggleGPXUploadVisibility(false);
+      this.showHideUI(false);
       document.removeEventListener("click", this.closeOnClickOutside);
     }
   };
 
-  toggleGPXUploadVisibility = (isVisible) => {
+  showHideUI = (isVisible) => {
     const fileInput = this.container.querySelector("#gpx-file-input");
     const speedInputFields = this.container.querySelector("div");
     const showButton = this.container.querySelector("button");
@@ -176,7 +176,7 @@ class GPSTrackControl {
     );
 
     showButton.addEventListener("click", () => {
-      this.toggleGPXUploadVisibility(true);
+      this.showHideUI(true);
     });
 
     fileInput.addEventListener("change", this.onFileChange);
@@ -186,21 +186,21 @@ class GPSTrackControl {
     });
   }
 
-  createUI(){
+  createUI() {
     this.uiBuilder.createUIElements();
     this.container = this.uiBuilder.container;
   }
 
   onAdd(map) {
     this.map = map;
-    this.createUI()
+    this.createUI();
     this.attachEventListeners();
     return this.uiBuilder.container;
   }
 
   onRemove() {
     if (this.map) {
-      this.removeOldLine();
+      this.removeLineIfExists();
     }
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
