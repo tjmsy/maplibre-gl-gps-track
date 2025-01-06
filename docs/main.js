@@ -8,4 +8,4 @@ const map = new maplibregl.Map({
   hash: true,
 });
 
-map.addControl(new GPSTrackControl({isHeartRateWidthEnabled: true})), 'top-left');
+map.addControl(new GPSTrackControl({isHeartRateWidthEnabled: true}), 'top-left');
