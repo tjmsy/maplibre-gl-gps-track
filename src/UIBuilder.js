@@ -3,6 +3,10 @@ class UIBuilder {
     this.container = null;
     this.minSpeedInput = null;
     this.maxSpeedInput = null;
+    this.minHeartRateInput = null;
+    this.maxHeartRateInput = null;
+    this.minHeartRateWidth = 3;
+    this.maxHeartRateWidth = 15;
   }
 
   createShowButton() {
@@ -30,6 +34,58 @@ class UIBuilder {
     fileInputContainer.appendChild(fileInput);
 
     return fileInputContainer;
+  }
+
+  createHeartRateContainer() {
+    const heartRateContainer = document.createElement("div");
+    heartRateContainer.id = "heart-rate-container";
+    heartRateContainer.style.display = "none";
+    heartRateContainer.style.flexDirection = "column";
+    heartRateContainer.style.padding = "8px";
+
+    const minHeartRateLabel = document.createElement("label");
+    minHeartRateLabel.innerText = "Min HeartRate:";
+    this.minHeartRateInput = document.createElement("input");
+    this.minHeartRateInput.id = "min-heart-rate-input";
+    this.minHeartRateInput.type = "number";
+    this.minHeartRateInput.style.marginBottom = "8px";
+    this.minHeartRateInput.style.width = "60px";
+
+    const minHeartRateWidthLabel = document.createElement("label");
+    minHeartRateWidthLabel.innerText = "Width:";
+    this.minHeartRateWidthInput = document.createElement("input");
+    this.minHeartRateWidthInput.id = "min-heart-rate-width-input";
+    this.minHeartRateWidthInput.type = "number";
+    this.minHeartRateWidthInput.value = this.minHeartRateWidth;
+    this.minHeartRateWidthInput.style.marginBottom = "8px";
+    this.minHeartRateWidthInput.style.width = "60px";
+
+    const maxHeartRateLabel = document.createElement("label");
+    maxHeartRateLabel.innerText = "Max HeartRate:";
+    this.maxHeartRateInput = document.createElement("input");
+    this.maxHeartRateInput.id = "max-heart-rate-input";
+    this.maxHeartRateInput.type = "number";
+    this.maxHeartRateInput.style.width = "60px";
+
+    const maxHeartRateWidthLabel = document.createElement("label");
+    maxHeartRateWidthLabel.innerText = "Width:";
+    this.maxHeartRateWidthInput = document.createElement("input");
+    this.maxHeartRateWidthInput.id = "max-heart-rate-width-input";
+    this.maxHeartRateWidthInput.type = "number";
+    this.maxHeartRateWidthInput.value = this.maxHeartRateWidth;
+    this.maxHeartRateWidthInput.style.marginBottom = "8px";
+    this.maxHeartRateWidthInput.style.width = "60px";
+
+    heartRateContainer.appendChild(minHeartRateLabel);
+    heartRateContainer.appendChild(this.minHeartRateInput);
+    heartRateContainer.appendChild(minHeartRateWidthLabel);
+    heartRateContainer.appendChild(this.minHeartRateWidthInput);
+    heartRateContainer.appendChild(maxHeartRateLabel);
+    heartRateContainer.appendChild(this.maxHeartRateInput);
+    heartRateContainer.appendChild(maxHeartRateWidthLabel);
+    heartRateContainer.appendChild(this.maxHeartRateWidthInput);
+
+    return heartRateContainer;
   }
 
   createSpeedContainer() {
@@ -69,11 +125,21 @@ class UIBuilder {
     const showButton = this.createShowButton();
     const fileInput = this.createFileInput();
     const speedContainer = this.createSpeedContainer();
+    const heartRateContainer = this.createHeartRateContainer();
 
     this.container.appendChild(showButton);
     this.container.appendChild(fileInput);
     this.container.appendChild(speedContainer);
+    this.container.appendChild(heartRateContainer);
   }
+
+  setHeartRateContainerVisibility = (isVisible) => {
+    const heartRateContainer = this.container.querySelector(
+      "#heart-rate-container"
+    );
+    heartRateContainer.style.display = isVisible ? "flex" : "none";
+  };
+
   setSpeedContainerVisibility = (isVisible) => {
     const speedContainer = this.container.querySelector("#speed-container");
     speedContainer.style.display = isVisible ? "flex" : "none";

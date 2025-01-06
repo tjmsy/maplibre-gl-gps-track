@@ -7,20 +7,24 @@ class GPSTrackControl {
   static LAYER_ID = "gps-layer";
 
   constructor({
-    paintOptions = { "line-width": 3 },
-    fitBoundsOptions = { duration: 1000 },
+    paintOptions,
+    fitBoundsOptions,
     isSpeedColorEnabled = true,
-  }) {
-    this.paintOptions = paintOptions;
-    this.fitBoundsOptions = fitBoundsOptions;
+    isHeartRateWidthEnabled = false,
+  } = {}) {
+    this.paintOptions = { "line-width": 4, ...paintOptions };
+    this.fitBoundsOptions = { duration: 1000, ...fitBoundsOptions };
     this.isSpeedColorEnabled = isSpeedColorEnabled;
+    this.isHeartRateWidthEnabled = isHeartRateWidthEnabled;
 
     this.container = null;
     this.map = null;
-    this.minHeartRateBpm = 50;
-    this.maxHeartRateBpm = 200;
     this.uiBuilder = new UIBuilder();
     this.isGPXLoaded = false;
+    this.isHeartRateExist = false;
+
+    this.minHeartRateWidth = 3;
+    this.maxHeartRateWidth = 15;
   }
 
   async handleFile(file) {
@@ -46,6 +50,35 @@ class GPSTrackControl {
   onFileError = (error) => {
     alert(`Failed to load file. Reason: ${error.message || "Unknown error"}`);
     console.error("Error reading file:", error);
+  };
+
+  createHeartRateWidthExpression = () => {
+    return [
+      "interpolate",
+      ["linear"],
+      ["get", "heartRate"],
+      this.minHeartRate,
+      this.minHeartRateWidth,
+      this.maxHeartRate,
+      this.maxHeartRateWidth,
+    ];
+  };
+
+  updateHeartRateWidthLayer = () => {
+    const minHeartRate = this.minHeartRate;
+    const maxHeartRate = this.maxHeartRate;
+
+    if (maxHeartRate < minHeartRate) {
+      return;
+    }
+
+    if (this.map.getLayer(GPSTrackControl.LAYER_ID)) {
+      this.map.setPaintProperty(
+        GPSTrackControl.LAYER_ID,
+        "line-width",
+        this.createHeartRateWidthExpression()
+      );
+    }
   };
 
   createSpeedColorExpression = () => {
@@ -85,9 +118,6 @@ class GPSTrackControl {
       id: GPSTrackControl.LAYER_ID,
       type: "line",
       source: GPSTrackControl.SOURCE_ID,
-      layout: {
-        "line-cap": "square",
-      },
       paint: this.paintOptions,
     };
   };
@@ -113,6 +143,46 @@ class GPSTrackControl {
       this.map.removeSource(GPSTrackControl.SOURCE_ID);
     }
   };
+
+  getHeartRateRange(features) {
+    let minHeartRate = Infinity;
+    let maxHeartRate = -Infinity;
+
+    features.forEach((feature) => {
+      const heartRate = feature.properties?.heartRate;
+
+      if (heartRate !== null) {
+        this.isHeartRateExist = true;
+        minHeartRate = Math.min(minHeartRate, heartRate);
+        maxHeartRate = Math.max(maxHeartRate, heartRate);
+      } else {
+        this.isHeartRateExist = false;
+        return;
+      }
+    });
+
+    return { minHeartRate, maxHeartRate };
+  }
+
+  updateHeartRateRange(features) {
+    const heartRateRange = this.getHeartRateRange(features);
+    this.minHeartRate = Math.round(heartRateRange.minHeartRate);
+    this.maxHeartRate = Math.round(heartRateRange.maxHeartRate);
+
+    const minHeartRateInput = this.container.querySelector(
+      "#min-heart-rate-input"
+    );
+    const maxHeartRateInput = this.container.querySelector(
+      "#max-heart-rate-input"
+    );
+
+    if (minHeartRateInput) {
+      minHeartRateInput.value = this.minHeartRate;
+    }
+    if (maxHeartRateInput) {
+      maxHeartRateInput.value = this.maxHeartRate;
+    }
+  }
 
   getSpeedRange(features) {
     let minSpeed = Infinity;
@@ -183,8 +253,17 @@ class GPSTrackControl {
     this.addLine(geojson, this.createLineStyle());
     if (this.isSpeedColorEnabled) {
       this.updateSpeedRange(geojson.features);
-      this.uiBuilder.setSpeedContainerVisibility(this.isGPXLoaded);
+      this.uiBuilder.setSpeedContainerVisibility(true);
       this.updateSpeedColorLayer();
+    }
+    if (this.isHeartRateWidthEnabled) {
+      this.updateHeartRateRange(geojson.features);
+      if (this.isHeartRateExist) {
+        this.uiBuilder.setHeartRateContainerVisibility(true);
+        this.updateHeartRateWidthLayer();
+      } else {
+        this.uiBuilder.setHeartRateContainerVisibility(false);
+      }
     }
     this.moveMap(geojson.features);
   };
@@ -198,7 +277,6 @@ class GPSTrackControl {
 
   showHideUI = (isVisible) => {
     const fileInput = this.container.querySelector("#gpx-file-input");
-    const speedContainer = this.container.querySelector("#speed-container");
     const showButton = this.container.querySelector("#show-button");
 
     if (isVisible) {
@@ -206,21 +284,17 @@ class GPSTrackControl {
       this.uiBuilder.setSpeedContainerVisibility(
         this.isGPXLoaded && this.isSpeedColorEnabled
       );
+      this.uiBuilder.setHeartRateContainerVisibility(
+        this.isGPXLoaded && this.isHeartRateExist
+      );
       showButton.style.display = "none";
       document.addEventListener("click", this.closeOnClickOutside);
     } else {
       fileInput.style.display = "none";
       this.uiBuilder.setSpeedContainerVisibility(false);
+      this.uiBuilder.setHeartRateContainerVisibility(false);
       showButton.style.display = "block";
     }
-  };
-
-  updateSpeedInputs = () => {
-    const minSpeedInput = document.getElementById("min-speed-input");
-    const maxSpeedInput = document.getElementById("max-speed-input");
-
-    minSpeedInput.value = this.minSpeedKmPerHour;
-    maxSpeedInput.value = this.maxSpeedKmPerHour;
   };
 
   attachEventListeners() {
@@ -228,12 +302,72 @@ class GPSTrackControl {
     const fileInput = this.container.querySelector("#gpx-file-input");
     const minSpeedInput = this.container.querySelector("#min-speed-input");
     const maxSpeedInput = this.container.querySelector("#max-speed-input");
+    const minHeartRateInput = this.container.querySelector(
+      "#min-heart-rate-input"
+    );
+    const maxHeartRateInput = this.container.querySelector(
+      "#max-heart-rate-input"
+    );
+    const minHeartRateWidthInput = this.container.querySelector(
+      "#min-heart-rate-width-input"
+    );
+    const maxHeartRateWidthInput = this.container.querySelector(
+      "#max-heart-rate-width-input"
+    );
 
     showButton.addEventListener("click", () => {
       this.showHideUI(true);
     });
 
     fileInput.addEventListener("change", this.onFileChange);
+
+    minHeartRateInput.addEventListener("input", (event) => {
+      const inputValue = event.target.value;
+      if (inputValue === "") {
+        return;
+      }
+      const value = parseFloat(inputValue);
+      if (!isNaN(value)) {
+        this.minHeartRate = value;
+        this.updateHeartRateWidthLayer();
+      }
+    });
+
+    minHeartRateWidthInput.addEventListener("input", (event) => {
+      const inputValue = event.target.value;
+      if (inputValue === "") {
+        return;
+      }
+      const value = parseFloat(inputValue);
+      if (!isNaN(value)) {
+        this.minHeartRateWidth = value;
+        this.updateHeartRateWidthLayer();
+      }
+    });
+
+    maxHeartRateInput.addEventListener("input", (event) => {
+      const inputValue = event.target.value;
+      if (inputValue === "") {
+        return;
+      }
+      const value = parseFloat(inputValue);
+      if (!isNaN(value)) {
+        this.maxHeartRate = value;
+        this.updateHeartRateWidthLayer();
+      }
+    });
+
+    maxHeartRateWidthInput.addEventListener("input", (event) => {
+      const inputValue = event.target.value;
+      if (inputValue === "") {
+        return;
+      }
+      const value = parseFloat(inputValue);
+      if (!isNaN(value)) {
+        this.maxHeartRateWidth = value;
+        this.updateHeartRateWidthLayer();
+      }
+    });
 
     minSpeedInput.addEventListener("input", (event) => {
       const inputValue = event.target.value;
