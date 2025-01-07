@@ -22,7 +22,7 @@ class UIBuilder {
     fileInputContainer.id = "gpx-file-input";
 
     const label = document.createElement("label");
-    label.innerText = "GPX File Loader";
+    label.innerText = "GPS Visualizer";
     label.style.display = "block";
     label.style.marginBottom = "8px";
 
