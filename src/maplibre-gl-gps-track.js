@@ -93,7 +93,7 @@ class GPSTrackControl {
       this.map.setPaintProperty(
         GPSTrackControl.LAYER_ID,
         "line-width",
-        this.createHeartRateWidthExpression()
+        this.createHeartRateWidthExpression(),
       );
     }
   };
@@ -125,7 +125,7 @@ class GPSTrackControl {
       this.map.setPaintProperty(
         GPSTrackControl.LAYER_ID,
         "line-color",
-        this.createSpeedColorExpression()
+        this.createSpeedColorExpression(),
       );
     }
   };
@@ -143,7 +143,7 @@ class GPSTrackControl {
     if (!geojson || !geojson.type || geojson.type !== "FeatureCollection") {
       console.error(
         "Invalid GeoJSON data. Expected a FeatureCollection but received:",
-        geojson
+        geojson,
       );
       return;
     }
@@ -184,7 +184,7 @@ class GPSTrackControl {
     minInputId,
     maxInputId,
     stateKeys,
-    existenceKey
+    existenceKey,
   ) {
     const range = this.getRange(features, propertyName);
     this[stateKeys.min] = Math.round(range.min);
@@ -212,7 +212,7 @@ class GPSTrackControl {
       "min-heart-rate-input",
       "max-heart-rate-input",
       { min: "minHeartRate", max: "maxHeartRate" },
-      "isHeartRateExist"
+      "isHeartRateExist",
     );
   }
 
@@ -250,7 +250,7 @@ class GPSTrackControl {
         [minLng, minLat],
         [maxLng, maxLat],
       ],
-      this.fitBoundsOptions
+      this.fitBoundsOptions,
     );
   };
 
@@ -285,6 +285,9 @@ class GPSTrackControl {
     this.addLine(geojson, this.createLineStyle());
     this.updateLineProperties(geojson.features);
     this.fitMapToBounds(geojson.features);
+    this.map.fire("gpstrack:loaded", {
+      geojson,
+    });
   };
 
   showHideUI = (isVisible) => {
@@ -294,10 +297,10 @@ class GPSTrackControl {
     if (isVisible) {
       fileInput.style.display = "block";
       this.uiManager.setSpeedContainerVisibility(
-        this.isGPXLoaded && this.isSpeedColorEnabled
+        this.isGPXLoaded && this.isSpeedColorEnabled,
       );
       this.uiManager.setHeartRateContainerVisibility(
-        this.isGPXLoaded && this.isHeartRateExist
+        this.isGPXLoaded && this.isHeartRateExist,
       );
       showButton.style.display = "none";
       this.eventManager.attachClickOutsideListener();
